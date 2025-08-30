@@ -34,9 +34,11 @@ class AuraApp extends StatelessWidget {
 class ChatMessage {
   final String text;
   final bool isUser;
+  final String? assetPath; // optional image/gif asset to show with the message
   final DateTime timestamp;
 
-  ChatMessage({required this.text, required this.isUser}) : timestamp = DateTime.now();
+  ChatMessage({required this.text, required this.isUser, this.assetPath})
+      : timestamp = DateTime.now();
 }
 
 class ChatScreen extends StatefulWidget {
@@ -71,7 +73,11 @@ class _ChatScreenState extends State<ChatScreen> {
       tod = 'Good evening';
     }
     final text = '$tod. I\'m here to listen. How are you feeling today?';
-    _messages.add(ChatMessage(text: text, isUser: false));
+    _messages.add(ChatMessage(
+      text: text,
+      isUser: false,
+      assetPath: 'assets/welcom_chatbot.gif',
+    ));
   }
 
   String _baseUrl() {
@@ -153,13 +159,10 @@ class _ChatScreenState extends State<ChatScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: true,
-          title: Text(
-            'Kai',
-            style: GoogleFonts.montserrat(
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
-              letterSpacing: 0.5,
-            ),
+          title: Image.asset(
+            'assets/appbar_Title.gif',
+            height: 200,
+            fit: BoxFit.contain,
           ),
         ),
         body: SafeArea(
@@ -250,9 +253,28 @@ class ChatBubble extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
           decoration: decoration,
-          child: Text(
-            message.text,
-            style: TextStyle(color: textColor, fontSize: 16, height: 1.35),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.assetPath != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    height: message.assetPath!.endsWith('welcom_chatbot.gif') ? 50 : 60,
+                    child: Image.asset(
+                      message.assetPath!,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              if (message.text.isNotEmpty) ...[
+                if (message.assetPath != null) const SizedBox(height: 8),
+                Text(
+                  message.text,
+                  style: TextStyle(color: textColor, fontSize: 16, height: 1.35),
+                ),
+              ],
+            ],
           ),
         ),
       ),

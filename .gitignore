@@ -46,3 +46,4 @@ app.*.map.json
 
 # Environment files (do not commit secrets)
 aura_backend/.env
+.venv/
