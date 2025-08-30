@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "802422113532",
+    "project_id": "flutter-chatbot-f8160",
+    "storage_bucket": "flutter-chatbot-f8160.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:802422113532:android:010bc32df164ac57ff8379",
+        "android_client_info": {
+          "package_name": "com.example.chatbotkai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "802422113532-u4bi0j59f6spovdnkqfaiv7c2l49n5oh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chatbotkai",
+            "certificate_hash": "6b331402354c40082f2303da3efffa9ca229b297"
+          }
+        },
+        {
+          "client_id": "802422113532-gcpon9q6fpc7ejmv0ji2a689jn3trosb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDPwVza0VrC5BwXGt3guYF3I1jcivqiZ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "802422113532-gcpon9q6fpc7ejmv0ji2a689jn3trosb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

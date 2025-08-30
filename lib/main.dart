@@ -6,13 +6,30 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:uuid/uuid.dart';
 
-void main() {
-  runApp(const AuraApp());
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  bool initialized = false;
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    initialized = true;
+  } catch (e) {
+    // Keep initialized as false; we'll show a config-needed screen.
+  }
+  runApp(KaiApp(firebaseReady: initialized));
 }
 
-class AuraApp extends StatelessWidget {
-  const AuraApp({super.key});
+class KaiApp extends StatelessWidget {
+  final bool firebaseReady;
+  const KaiApp({super.key, required this.firebaseReady});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +43,169 @@ class AuraApp extends StatelessWidget {
         textTheme: baseTextTheme,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
       ),
-      home: const ChatScreen(),
+      home: firebaseReady ? const Root() : const FirebaseConfigNeeded(),
+    );
+  }
+}
+
+class FirebaseConfigNeeded extends StatelessWidget {
+  const FirebaseConfigNeeded({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, size: 48, color: Colors.teal),
+              const SizedBox(height: 12),
+              const Text(
+                'Firebase isn\'t configured yet.',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Run `flutterfire configure` to generate firebase_options.dart, then restart the app.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class Root extends StatelessWidget {
+  const Root({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const SplashScreen();
+        }
+        final user = snap.data;
+        if (user == null) {
+          return const SignInScreen();
+        }
+        return ChatScreen(user: user);
+      },
+    );
+  }
+}
+
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final gradient = const LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xFFE1BEE7), Color(0xFFB2EBF2)],
+    );
+    return Container(
+      decoration: BoxDecoration(gradient: gradient),
+      child: const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(child: CircularProgressIndicator(color: Colors.teal)),
+      ),
+    );
+  }
+}
+
+class SignInScreen extends StatelessWidget {
+  const SignInScreen({super.key});
+
+  Future<void> _signIn(BuildContext context) async {
+    try {
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider()..setCustomParameters({'prompt': 'select_account'});
+        await FirebaseAuth.instance.signInWithPopup(provider);
+      } else {
+        final googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) return; // cancelled
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          idToken: googleAuth.idToken,
+          accessToken: googleAuth.accessToken,
+        );
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign-in failed: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gradient = const LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xFFE1BEE7), Color(0xFFB2EBF2)],
+    );
+
+    return Container(
+      decoration: BoxDecoration(gradient: gradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          title: Image.asset('assets/appbar_Title.gif', height: 100, fit: BoxFit.contain),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      height: 120,
+                      child: Image.asset('assets/welcom_chatbot.gif', fit: BoxFit.contain),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Welcome to Kai',
+                    style: GoogleFonts.montserrat(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sign in to start your calming chat. Your conversations are saved securely.',
+                    style: GoogleFonts.montserrat(fontSize: 14, color: Colors.black87),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
+                      elevation: 2,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
+                    onPressed: () => _signIn(context),
+                    icon: const FaIcon(FontAwesomeIcons.google, color: Colors.red, size: 20),
+                    label: Text('Sign in with Google', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -34,15 +213,15 @@ class AuraApp extends StatelessWidget {
 class ChatMessage {
   final String text;
   final bool isUser;
-  final String? assetPath; // optional image/gif asset to show with the message
+  final String? assetPath; // optional image/gif asset
   final DateTime timestamp;
 
-  ChatMessage({required this.text, required this.isUser, this.assetPath})
-      : timestamp = DateTime.now();
+  ChatMessage({required this.text, required this.isUser, this.assetPath}) : timestamp = DateTime.now();
 }
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final User user;
+  const ChatScreen({super.key, required this.user});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -54,47 +233,162 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
   String? _conversationId;
 
-  @override
-  void initState() {
-    super.initState();
-    _insertLandingGreeting();
-  }
-
-  void _insertLandingGreeting() {
-    if (_messages.isNotEmpty) return;
-    final now = DateTime.now();
-    final hour = now.hour;
-    String tod;
-    if (hour < 12) {
-      tod = 'Good morning';
-    } else if (hour < 17) {
-      tod = 'Good afternoon';
-    } else {
-      tod = 'Good evening';
-    }
-    final text = '$tod. I\'m here to listen. How are you feeling today?';
-    _messages.add(ChatMessage(
-      text: text,
-      isUser: false,
-      assetPath: 'assets/welcom_chatbot.gif',
-    ));
-  }
-
   String _baseUrl() {
     if (kIsWeb) return 'http://localhost:8000';
     if (Platform.isAndroid) return 'http://10.0.2.2:8000';
     return 'http://localhost:8000';
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _initConversation();
+  }
+
+  Future<void> _initConversation() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final userMetaRef = FirebaseFirestore.instance.collection('users').doc(uid);
+      final userMetaSnap = await userMetaRef.get();
+      final latestId = userMetaSnap.data()?['latestConversationId'] as String?;
+
+      if (latestId != null && latestId.isNotEmpty) {
+        final convSnap = await FirebaseFirestore.instance.collection('conversations').doc(latestId).get();
+        if (convSnap.exists) {
+          if (!mounted) return;
+          setState(() {
+            _conversationId = latestId;
+          });
+          return;
+        }
+      }
+
+      // No valid existing conversation: create a new one and add the landing greeting message
+      final cid = const Uuid().v4();
+      final convRef = FirebaseFirestore.instance.collection('conversations').doc(cid);
+      await convRef.set({
+        'ownerUid': uid,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await userMetaRef.set({
+        'latestConversationId': cid,
+        'latestUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      final now = DateTime.now();
+      final hour = now.hour;
+      final tod = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
+      final name = widget.user.displayName?.split(' ').first ?? 'there';
+      final text = '$tod, $name. I\'m here to listen. How are you feeling today?';
+
+      await convRef.collection('messages').add({
+        'text': text,
+        'isUser': false,
+        'assetPath': 'assets/welcom_chatbot.gif',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _conversationId = cid;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _conversationId = _conversationId ?? const Uuid().v4();
+        _messages.clear();
+        final name = widget.user.displayName?.split(' ').first ?? 'there';
+        _messages.add(ChatMessage(text: 'Welcome back, $name. Starting a new chat.', isUser: false));
+      });
+    }
+  }
+
+  Future<void> _saveMessage({required String text, required bool isUser, String? assetPath}) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    // Ensure conversation id exists (generate before first send, pass to backend)
+    _conversationId ??= const Uuid().v4();
+    final convRef = FirebaseFirestore.instance.collection('conversations').doc(_conversationId);
+    await convRef.set({
+      'ownerUid': uid,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await convRef.collection('messages').add({
+      'text': text,
+      'isUser': isUser,
+      'assetPath': assetPath,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Update user meta to resume this conversation next time
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'latestConversationId': _conversationId,
+      'latestUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> _deleteConversation() async {
+    final cid = _conversationId;
+    if (cid == null) return;
+    final convRef = FirebaseFirestore.instance.collection('conversations').doc(cid);
+    final msgs = await convRef.collection('messages').get();
+    final batch = FirebaseFirestore.instance.batch();
+    for (final d in msgs.docs) {
+      batch.delete(d.reference);
+    }
+    batch.delete(convRef);
+    await batch.commit();
+    if (!mounted) return;
+    // After deletion, start a fresh conversation and add greeting into Firestore
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final cidNew = const Uuid().v4();
+    final convRefNew = FirebaseFirestore.instance.collection('conversations').doc(cidNew);
+    await convRefNew.set({
+      'ownerUid': uid,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    final now = DateTime.now();
+    final hour = now.hour;
+    final name = widget.user.displayName?.split(' ').first ?? 'there';
+    final tod = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
+    final text = '$tod, $name. I\'m here to listen. How are you feeling today?';
+    await convRefNew.collection('messages').add({
+      'text': text,
+      'isUser': false,
+      'assetPath': 'assets/welcom_chatbot.gif',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    if (!mounted) return;
+    setState(() {
+      _conversationId = cidNew;
+      _messages.clear();
+    });
+  }
+
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    // Ensure we have a conversation id and pass it to backend
+    _conversationId ??= const Uuid().v4();
+
+    // Save immediately; UI will reflect via Firestore stream
     setState(() {
-      _messages.add(ChatMessage(text: text, isUser: true));
       _controller.clear();
       _isLoading = true;
     });
+    await _saveMessage(text: text, isUser: true);
 
     FocusScope.of(context).unfocus();
 
@@ -106,30 +400,21 @@ class _ChatScreenState extends State<ChatScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'message': text,
-          if (_conversationId != null) 'conversation_id': _conversationId,
+          'conversation_id': _conversationId, // always send our id so backend uses it
         }),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final reply = (data['reply'] ?? 'Sorry, I could not understand that.') as String;
-        setState(() {
-          _conversationId = (data['conversation_id'] as String?) ?? _conversationId;
-          _messages.add(ChatMessage(text: reply, isUser: false));
-        });
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final reply = (data['reply'] ?? 'Sorry, I could not understand that.') as String;
+      await _saveMessage(text: reply, isUser: false);
       } else {
-        final errorMsg = 'Server error (${response.statusCode}). Please try again later.';
-        setState(() {
-          _messages.add(ChatMessage(text: errorMsg, isUser: false));
-        });
+      final errorMsg = 'Server error (${response.statusCode}). Please try again later.';
+      await _saveMessage(text: errorMsg, isUser: false);
       }
     } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(
-          text: 'Network error: $e',
-          isUser: false,
-        ));
-      });
+      final msg = 'Network error: $e';
+      await _saveMessage(text: msg, isUser: false);
     } finally {
       if (mounted) {
         setState(() {
@@ -161,9 +446,23 @@ class _ChatScreenState extends State<ChatScreen> {
           centerTitle: true,
           title: Image.asset(
             'assets/appbar_Title.gif',
-            height: 200,
+            height: 150,
             fit: BoxFit.contain,
           ),
+          actions: [
+            IconButton(
+              tooltip: 'Delete conversation',
+              onPressed: _deleteConversation,
+              icon: const Icon(Icons.delete_outline, color: Colors.black87),
+            ),
+            IconButton(
+              tooltip: 'Sign out',
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+              },
+              icon: const Icon(Icons.logout, color: Colors.black87),
+            ),
+          ],
         ),
         body: SafeArea(
           child: Column(
@@ -174,19 +473,43 @@ class _ChatScreenState extends State<ChatScreen> {
                   minHeight: 2,
                 ),
               Expanded(
-                child: ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final item = _messages[_messages.length - 1 - index];
-                    final bubble = ChatBubble(message: item, key: ValueKey(item.timestamp.millisecondsSinceEpoch));
-                    return bubble
-                        .animate()
-                        .fadeIn(duration: 400.ms)
-                        .slideY(begin: 0.5, end: 0.0);
-                  },
-                ),
+                child: _conversationId == null
+                    ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+                    : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: FirebaseFirestore.instance
+                            .collection('conversations')
+                            .doc(_conversationId)
+                            .collection('messages')
+                            .orderBy('timestamp')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator(color: Colors.teal));
+                          }
+                          final docs = snapshot.data?.docs ?? [];
+                          final items = docs.map((d) {
+                            final data = d.data();
+                            return ChatMessage(
+                              text: (data['text'] ?? '') as String,
+                              isUser: (data['isUser'] ?? false) as bool,
+                              assetPath: data['assetPath'] as String?,
+                            );
+                          }).toList();
+                          return ListView.builder(
+                            reverse: true,
+                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final item = items[items.length - 1 - index];
+                              final bubble = ChatBubble(message: item, key: ValueKey(item.timestamp.millisecondsSinceEpoch));
+                              return bubble
+                                  .animate()
+                                  .fadeIn(duration: 400.ms)
+                                  .slideY(begin: 0.5, end: 0.0);
+                            },
+                          );
+                        },
+                      ),
               ),
               _InputBar(
                 controller: _controller,
@@ -260,7 +583,7 @@ class ChatBubble extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: SizedBox(
-                    height: message.assetPath!.endsWith('welcom_chatbot.gif') ? 50 : 60,
+                    height: message.assetPath!.endsWith('welcom_chatbot.gif') ? 60 : 90,
                     child: Image.asset(
                       message.assetPath!,
                       fit: BoxFit.contain,
