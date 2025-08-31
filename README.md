@@ -10,6 +10,37 @@ A modern, calming chatbot that helps users de‑stress. Built with Flutter (Web 
 
 ---
 
+## Mobile screens
+
+<p align="center">
+  <img src="screenshots/mobile1.png" alt="Sign in screen" width="22%"/>
+  <img src="screenshots/mobile2.png" alt="Chat screen – conversation" width="22%"/>
+  <img src="screenshots/mobile3.png" alt="New conversation / clear" width="22%"/>
+  <img src="screenshots/mobile4.png" alt="Signed-in state" width="22%"/>
+</p>
+
+---
+
+## What happens in the app
+
+- You open the app and sign in with Google (Web or Android).
+- Kai welcomes you with a calming UI and guides you with one gentle question at a time.
+- Your conversation is saved to Firestore so you can continue where you left off.
+- You can clear the current conversation to start fresh; a new conversation ID is created.
+- Android talks to the local FastAPI backend at `10.0.2.2:8000` (Web uses `localhost:8000`).
+- Kai focuses only on wellbeing topics (stress, mood, sleep, coping, relationships, etc.). Off‑topic requests are politely declined and redirected back to your wellbeing.
+
+---
+
+## Demo video
+
+> Put your video at `media/sample.mp4` (this repo ignores large binaries by default; consider Git LFS or YouTube for long videos).
+
+<video src="screenshots/sample.mp4" controls muted playsinline width="720">
+  Your browser does not support the video tag. Watch the video: <a href="screenshots/sample.mp4">sample.mp4</a>
+</video>
+
+---
 
 ## Features
 
