@@ -15,7 +15,7 @@ A modern, calming chatbot that helps users de‑stress. Built with Flutter (Web 
 <p align="center">
   <img src="screenshots/mobile1.png" alt="Sign in screen" width="22%"/>
   <img src="screenshots/mobile2.png" alt="Chat screen – conversation" width="22%"/>
-  <img src="screenshots/mobile3.png" alt="New conversation / clear" width="22%"/>
+  <img src="screenshots/mobile3.png" alt="New conversation / clear" width="29%"/>
   <img src="screenshots/mobile4.png" alt="Signed-in state" width="22%"/>
 </p>
 
@@ -32,15 +32,6 @@ A modern, calming chatbot that helps users de‑stress. Built with Flutter (Web 
 
 ---
 
-## Demo video
-
-> Put your video at `media/sample.mp4` (this repo ignores large binaries by default; consider Git LFS or YouTube for long videos).
-
-<video src="screenshots/sample.mp4" controls muted playsinline width="720">
-  Your browser does not support the video tag. Watch the video: <a href="screenshots/sample.mp4">sample.mp4</a>
-</video>
-
----
 
 ## Features
 
