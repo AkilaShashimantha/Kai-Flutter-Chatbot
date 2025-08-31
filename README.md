@@ -15,7 +15,7 @@ A modern, calming chatbot that helps users de‑stress. Built with Flutter (Web 
 <p align="center">
   <img src="screenshots/mobile1.png" alt="Sign in screen" width="22%"/>
   <img src="screenshots/mobile2.png" alt="Chat screen – conversation" width="22%"/>
-  <img src="screenshots/mobile3.png" alt="New conversation / clear" width="29%"/>
+  <img src="screenshots/mobile3.png" alt="New conversation / clear" width="34%"/>
   <img src="screenshots/mobile4.png" alt="Signed-in state" width="22%"/>
 </p>
 
